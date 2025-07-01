@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随机样式文字</title>
+    <style>
+        @font-face {
+            font-family: '陈旭东字体';
+            src: url('陈旭东字体.ttf') format('truetype');
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: white;
+            font-family: '陈旭东字体', '宋体', SimSun, serif;
+        }
+        .text-container {
+            max-width: 800px;
+            padding: 20px;
+            line-height: 0.7;
+            text-align: justify;
+            margin: 0 auto;
+            width: 800px;
+            word-break: break-all;
+            text-justify: inter-ideograph;
+            text-align-last: justify;
+        }
+        .char {
+            display: inline-block;
+            position: relative;
+            text-align: justify;
+            letter-spacing: -0.044em; /* 微调字符间距 */
+        }
+        .char.en {
+            margin-left: -0.05em; /* 英文字符小幅重叠 */
+        }
+        .char.zh {
+            margin-left: -0.3em;
+        }
+        /* 英文单词内的字符样式 */
+        .char.en.in-word {
+            margin-left: -0.05em; /* 英文单词内字符小幅重叠 */
+        }
+        /* 空格字符不应该有重叠效果 */
+        .char.space {
+            margin-left: 0;
+            width: 0.03em;
+            display: inline-block;
+        }
+        /* 中文标点符号样式 */
+        .char.special.zh-punct {
+            margin-right: -0.4em; /* 中文标点符号右边字符重叠效果 */
+        }
+        /* 中文左括号和左引号样式 */
+        .char.special.zh-punct.left-bracket,
+        .char.special.zh-punct.left-quote {
+            margin-right: -0.05em;
+            margin-left: -0.7em; /* 与左边字符重叠 */
+        }
+        /* 中文右引号样式 */
+        .char.special.zh-punct.right-quote {
+            margin-right: -0.7em; /* 与右边字符重叠 */
+            margin-left: -0.05em;
+        }
+        /* 其他中文标点符号后面字符的样式 */
+        .char.after-zh-punct {
+            margin-left: -0.4em;
+        }
+        /* 中文标点符号与中文字符相邻时的样式 */
+        .char.special.zh-punct.after-zh {
+            margin-left: -0.2em; /* 当左边是中文字符时的重叠效果 */
+        }
+        /* 添加新的类，用于英文标点符号 */
+        .char.special.en-punct {
+            margin-left: -0.05em; /* 英文标点符号与英文字符保持一致的重叠效果 */
+        }
+        /* 添加新的类，用于数字 */
+        .char.number {
+            margin-left: -0.03em; /* 数字小幅重叠 */
+        }
+    </style>
+</head>
+<body>
+    <div class="text-container" id="container"></div>
+
+    <script>
+        function createRandomStyledText(text) {
+            const container = document.getElementById('container');
+            let currentLine = document.createElement('div');
+            currentLine.style.marginBottom = '10px';
+            currentLine.style.width = '800px'; // 固定宽度
+            currentLine.style.textAlign = 'justify'; // 添加两端对齐
+            let currentLineWidth = 0;
+            let charsInCurrentLine = 0;
+            const maxLineWidth = 760; // 减小最大行宽以留出更多空间进行两端对齐
+            
+            // 将<br>标签替换为特殊标记，以便后续处理
+            text = text.replace(/<br>/g, '\n');
+            const chars = text.split('');
+            let isNewLine = false;
+            chars.forEach((char, index) => {
+                // 处理换行符
+                if (char === '\n') {
+                    currentLine.style.marginLeft = '0px';
+                    currentLine.style.marginRight = '0px';
+                    currentLine.style.textAlign = 'justify';
+                    container.appendChild(currentLine);
+                    currentLine = document.createElement('div');
+                    currentLine.style.marginBottom = '10px';
+                    currentLine.style.width = '800px';
+                    currentLine.style.textAlign = 'justify';
+                    charsInCurrentLine = 0;
+                    currentLineWidth = 0; // 重置当前行宽度
+                    return;
+                }
+                
+                // 随机字体大小 (14px - 16px)
+                const fontSize = 16 + Math.random() * 1;
+                
+                // 计算当前字符的宽度
+                const tempSpan = document.createElement('span');
+                tempSpan.style.visibility = 'hidden';
+                tempSpan.style.fontSize = `${fontSize}px`;
+                tempSpan.textContent = char;
+                document.body.appendChild(tempSpan);
+                const charWidth = tempSpan.offsetWidth;
+                document.body.removeChild(tempSpan);
+            
+                // 判断字符类型
+                const isEnglish = /[a-zA-Z]/.test(char);
+                const isNumber = /[0-9]/.test(char);
+                const isZhPunct = /[，。、：；？！（）【】「」『』《》""]/.test(char);
+                const isLeftBracketOrQuote = /[（【「『《"]/.test(char);
+                const isRightQuote = /[」』"]/.test(char);
+                const isPunctuation = /[\p{P}]/u.test(char);
+                const isSpace = /\s/.test(char);
+                const isSpecial = isEnglish || isNumber || isPunctuation || isSpace;
+                
+                // 检查前一个字符是否为中文
+                const prevIsZh = index > 0 && !(/[a-zA-Z0-9\s\p{P}]/u.test(chars[index - 1]));
+                
+                // 检查是否在英文单词中
+                const isInEnglishWord = isEnglish && 
+                    ((index > 0 && /[a-zA-Z]/.test(chars[index - 1])) || 
+                    (index < chars.length - 1 && /[a-zA-Z]/.test(chars[index + 1])));
+
+                // 根据行宽决定是否换行，同时考虑标点符号
+                // 根据字符类型调整有效宽度：英文、数字和标点符号宽度减半处理
+                let effectiveCharWidth = charWidth;
+                if (isEnglish || isNumber) {
+                    effectiveCharWidth = charWidth * 0.5; // 英文和数字宽度减半
+                } else if (isPunctuation) {
+                    effectiveCharWidth = charWidth * 0.5; // 标点符号宽度减半
+                }
+                if ((currentLineWidth + effectiveCharWidth > maxLineWidth && !isInEnglishWord) || 
+                    (currentLineWidth + effectiveCharWidth > maxLineWidth * 0.98 && !isInEnglishWord)) {
+                    // 检查下一个字符是否为标点符号
+                    const nextChar = index < chars.length - 1 ? chars[index + 1] : '';
+                    const isNextPunctuation = /[\p{P}]/u.test(nextChar);
+                    // 检查是否为段尾句号（句号后面是换行符或者是最后一个字符）
+                    const isPeriodAtEnd = char === '。' && (index === chars.length - 1 || chars[index + 1] === '\n');
+                    
+                    // 如果当前字符不是标点符号，且下一个字符不是标点符号，且不是段尾句号，则换行
+                    if (!isPunctuation && !isNextPunctuation && !isPeriodAtEnd) {
+                        // 在换行前，尝试调整当前行的字符间距以实现更好的右对齐
+                        if (currentLine.childNodes.length > 5) {
+                            const lastFewChars = Array.from(currentLine.childNodes).slice(-5);
+                            lastFewChars.forEach((span, i) => {
+                                span.style.letterSpacing = (-0.03 - i * 0.01) + 'em';
+                            });
+                        }
+                        
+                        currentLine.style.marginLeft = '0px';
+                        currentLine.style.marginRight = '0px'; // 移除右边距随机性
+                        currentLine.style.textAlign = 'justify';
+                        container.appendChild(currentLine);
+                        currentLine = document.createElement('div');
+                        currentLine.style.marginBottom = '10px';
+                        currentLine.style.width = '800px'; // 固定宽度
+                        currentLine.style.textAlign = 'justify';
+                        currentLineWidth = 0;
+                    }
+                }
+                currentLineWidth += charWidth;
+            
+                const span = document.createElement('span');
+                span.textContent = char;
+                
+                const prevIsEnglish = index > 0 && /[a-zA-Z]/.test(chars[index - 1]);
+                const prevIsNumber = index > 0 && /[0-9]/.test(chars[index - 1]);
+                const prevIsPunctuation = index > 0 && /[\p{P}]/u.test(chars[index - 1]);
+                const prevIsSpace = index > 0 && /\s/.test(chars[index - 1]);
+                const prevIsSpecial = prevIsEnglish || prevIsNumber || prevIsPunctuation || prevIsSpace;
+                
+                const nextIsEnglish = index < chars.length - 1 && /[a-zA-Z]/.test(chars[index + 1]);
+                const nextIsNumber = index < chars.length - 1 && /[0-9]/.test(chars[index + 1]);
+                const nextIsPunctuation = index < chars.length - 1 && /[\p{P}]/u.test(chars[index + 1]);
+                const nextIsSpace = index < chars.length - 1 && /\s/.test(chars[index + 1]);
+                const nextIsSpecial = nextIsEnglish || nextIsNumber || nextIsPunctuation || nextIsSpace;
+                
+                // 设置类名
+                if (isSpace) {
+                    span.className = 'char space';
+                } else if (prevIsSpace) {
+                    span.className = 'char after-space';
+                } else if (isEnglish) {
+                    span.className = isInEnglishWord ? 'char en in-word' : 'char en';
+                } else if (isNumber) {
+                    span.className = 'char number';
+                } else if (isZhPunct) {
+                    if (isLeftBracketOrQuote) {
+                        span.className = 'char special zh-punct left-bracket';
+                    } else if (isRightQuote) {
+                        span.className = 'char special zh-punct right-quote';
+                    } else if (prevIsZh) {
+                        span.className = 'char special zh-punct after-zh';
+                    } else {
+                        span.className = 'char special zh-punct';
+                    }
+                } else if (isPunctuation) {
+                    span.className = 'char special';
+                } else if (prevIsSpecial) {
+                    span.className = 'char zh next-to-special';
+                } else if (nextIsSpecial) {
+                    span.className = 'char zh next-to-special';
+                } else {
+                    span.className = 'char zh';
+                }
+                
+                span.style.fontSize = `${fontSize}px`;
+                
+                // 随机旋转角度 (-5deg - 5deg)
+                const rotation = 2 + Math.random() * 3;
+                
+                // 随机垂直位置偏移 (-2px - 2px)
+                const verticalOffset = -0.5 + Math.random() * 0.5;
+                
+                span.style.transform = `rotate(${rotation}deg)`;
+                span.style.top = `${verticalOffset}px`;
+                
+                currentLine.appendChild(span);
+                charsInCurrentLine++;
+            });
+            
+            // 添加最后一行
+            if (charsInCurrentLine > 0) {
+                // 对最后一行也应用相同的字符间距调整
+                if (currentLine.childNodes.length > 5) {
+                    const lastFewChars = Array.from(currentLine.childNodes).slice(-5);
+                    lastFewChars.forEach((span, i) => {
+                        span.style.letterSpacing = (-0.03 - i * 0.01) + 'em';
+                    });
+                }
+                
+                currentLine.style.marginLeft = '0px';
+                currentLine.style.marginRight = '0px'; // 移除右边距随机性
+                currentLine.style.textAlign = 'justify';
+                container.appendChild(currentLine);
+            }
+        }
+
+        // 示例文本
+        // 中文引号的空格没改好，尽量不写中文引号（可以用其他的标识符代替）
+        // 用\n手动换行，如果宽度达到了自动换行，加入手动换行符\n会出现空行，可以删去\n
+        // 需要删去数字和英文单词两侧的空格，如果遇到重叠过多的情况，可以重新打开页面，也可手动加入空格
+        const sampleText = "poor ~ eduy + male + age";
+        createRandomStyledText(sampleText);
+    </script>
+</body>
+</html>
+
